@@ -58,7 +58,7 @@ export default function App() {
               <div className="p-2.5 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-white/5">
                 <Sparkles size={22} className="text-amber-400" />
               </div>
-              <span className="text-xs font-bold uppercase tracking-[0.25em] text-white/20 font-heading">YourDay</span>
+              <span className="text-xs font-bold uppercase tracking-[0.25em] text-white/20 font-heading">flow-Day</span>
             </motion.div>
             <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
               className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold tracking-tight leading-tight">
@@ -140,7 +140,7 @@ export default function App() {
 
         <footer className="mt-16 text-center pb-8">
           <p className="text-white/10 text-xs font-medium tracking-wide">
-            © {new Date().getFullYear()} YourDay • Crafted with 💖
+            © {new Date().getFullYear()} flow-Day • Crafted with 💖
           </p>
         </footer>
       </div>
