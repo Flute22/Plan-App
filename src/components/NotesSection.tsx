@@ -1,18 +1,9 @@
-import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { StickyNote } from 'lucide-react';
+import { usePersistedState } from '../hooks/usePersistedState';
 
 export default function NotesSection() {
-  const [note, setNote] = useState('');
-
-  useEffect(() => {
-    const savedNote = localStorage.getItem('planner-note');
-    if (savedNote) setNote(savedNote);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('planner-note', note);
-  }, [note]);
+  const [note, setNote] = usePersistedState<string>('brain-dump', '', { perDay: false });
 
   return (
     <motion.div

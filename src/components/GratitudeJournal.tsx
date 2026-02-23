@@ -1,9 +1,9 @@
-import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Heart, Sparkle } from 'lucide-react';
+import { usePersistedState } from '../hooks/usePersistedState';
 
 export default function GratitudeJournal() {
-    const [entries, setEntries] = useState(['', '', '']);
+    const [entries, setEntries] = usePersistedState<string[]>('gratitude', ['', '', '']);
     const handleChange = (index: number, value: string) => {
         const newEntries = [...entries];
         newEntries[index] = value;

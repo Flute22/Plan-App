@@ -1,9 +1,9 @@
-import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Droplets, Plus, Minus } from 'lucide-react';
+import { usePersistedState } from '../hooks/usePersistedState';
 
 export default function WaterTracker() {
-  const [glasses, setGlasses] = useState(0);
+  const [glasses, setGlasses] = usePersistedState<number>('water-glasses', 0);
   const GOAL = 8;
   const addGlass = () => setGlasses(Math.min(glasses + 1, GOAL));
   const removeGlass = () => setGlasses(Math.max(glasses - 1, 0));

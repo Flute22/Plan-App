@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { motion } from 'motion/react';
 import { UtensilsCrossed, Coffee, Sun, Moon } from 'lucide-react';
+import { usePersistedState } from '../hooks/usePersistedState';
 
 interface Meal {
     name: string;
@@ -11,7 +11,7 @@ interface Meal {
 }
 
 export default function MealTracker() {
-    const [meals, setMeals] = useState<Record<string, string>>({
+    const [meals, setMeals] = usePersistedState<Record<string, string>>('meals', {
         breakfast: '',
         lunch: '',
         dinner: '',

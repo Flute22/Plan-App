@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Play, Pause, RotateCcw, Timer, ChevronDown, Brain, Coffee, Dumbbell, BookOpen } from 'lucide-react';
+import { usePersistedState } from '../hooks/usePersistedState';
 
 // Timer presets
 const PRESETS = [
@@ -53,7 +54,7 @@ export default function PomodoroTimer({ onFocusChange }: Props) {
   const [timeLeft, setTimeLeft] = useState(PRESETS[0].work);
   const [isActive, setIsActive] = useState(false);
   const [mode, setMode] = useState<'work' | 'break'>('work');
-  const [sessions, setSessions] = useState(0);
+  const [sessions, setSessions] = usePersistedState<number>('pomodoro-sessions', 0);
   const [showPresets, setShowPresets] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const presetRef = useRef<HTMLDivElement>(null);
@@ -224,8 +225,8 @@ export default function PomodoroTimer({ onFocusChange }: Props) {
         <div className="flex gap-4 mb-5">
           <motion.button onClick={toggleTimer} whileTap={{ scale: 0.9 }}
             className={`p-4 rounded-2xl transition-all shadow-lg text-white ${isActive
-                ? 'bg-gradient-to-r from-amber-500 to-yellow-500'
-                : `bg-gradient-to-r ${isWork ? preset.workColor : preset.breakColor}`
+              ? 'bg-gradient-to-r from-amber-500 to-yellow-500'
+              : `bg-gradient-to-r ${isWork ? preset.workColor : preset.breakColor}`
               }`}
             style={{ boxShadow: `0 4px 15px ${isWork ? a.glow.replace('0.4', '0.3') : 'rgba(45,212,191,0.3)'}` }}>
             {isActive ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" />}

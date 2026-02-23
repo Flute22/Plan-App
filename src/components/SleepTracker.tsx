@@ -1,9 +1,9 @@
-import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Moon, Minus, Plus, BedDouble } from 'lucide-react';
+import { usePersistedState } from '../hooks/usePersistedState';
 
 export default function SleepTracker() {
-  const [hours, setHours] = useState(7);
+  const [hours, setHours] = usePersistedState<number>('sleep-hours', 7);
   const GOAL = 8;
   const addHour = () => setHours(Math.min(hours + 0.5, 12));
   const removeHour = () => setHours(Math.max(hours - 0.5, 0));

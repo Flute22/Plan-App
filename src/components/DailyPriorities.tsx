@@ -1,11 +1,12 @@
 import { useState, useRef, type KeyboardEvent } from 'react';
 import { motion } from 'motion/react';
-import { Check, Lock, Unlock, Target, Circle, CheckCircle2 } from 'lucide-react';
+import { Check, Lock, Unlock, Target, Circle } from 'lucide-react';
+import { usePersistedState } from '../hooks/usePersistedState';
 
 export default function DailyPriorities() {
-  const [priorities, setPriorities] = useState(['', '', '']);
-  const [isLocked, setIsLocked] = useState(false);
-  const [completed, setCompleted] = useState([false, false, false]);
+  const [priorities, setPriorities] = usePersistedState<string[]>('priorities', ['', '', '']);
+  const [isLocked, setIsLocked] = usePersistedState<boolean>('priorities-locked', false);
+  const [completed, setCompleted] = usePersistedState<boolean[]>('priorities-completed', [false, false, false]);
 
   const toggleComplete = (index: number) => {
     if (!priorities[index].trim()) return;

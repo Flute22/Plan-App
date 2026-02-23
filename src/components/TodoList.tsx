@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Trash2, CheckCircle2, Circle, AlertCircle, ArrowUp, ArrowDown, ArrowUpDown, ListTodo, ChevronDown } from 'lucide-react';
+import { usePersistedState } from '../hooks/usePersistedState';
 
 type Priority = 'low' | 'medium' | 'high';
 type SortOrder = 'asc' | 'desc' | 'none';
@@ -20,16 +21,18 @@ const PRIORITY_CONFIG = {
   low: { label: 'Low', textColor: 'text-teal-300', bg: 'bg-teal-500/15', border: 'border-teal-500/20', borderL: 'border-l-teal-400', dotColor: 'bg-teal-500', icon: <ArrowDown size={12} /> },
 };
 
+function createDefaultTodos(): Todo[] {
+  return Array.from({ length: DEFAULT_SLOTS }, () => ({
+    id: crypto.randomUUID(),
+    text: '',
+    completed: false,
+    priority: 'medium' as Priority,
+  }));
+}
+
 export default function TodoList() {
-  const [todos, setTodos] = useState<Todo[]>(() =>
-    Array.from({ length: DEFAULT_SLOTS }, () => ({
-      id: crypto.randomUUID(),
-      text: '',
-      completed: false,
-      priority: 'medium' as Priority,
-    }))
-  );
-  const [slotCount, setSlotCount] = useState(DEFAULT_SLOTS);
+  const [todos, setTodos] = usePersistedState<Todo[]>('todos', createDefaultTodos());
+  const [slotCount, setSlotCount] = useState(todos.length || DEFAULT_SLOTS);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [sortOrder, setSortOrder] = useState<SortOrder>('none');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);

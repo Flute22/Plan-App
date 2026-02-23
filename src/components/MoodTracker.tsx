@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Heart, Sparkles } from 'lucide-react';
+import { usePersistedState } from '../hooks/usePersistedState';
 
 const MOODS = [
   { emoji: '😢', label: 'Awful', color: 'from-sky-400 to-blue-500', glow: 'rgba(56,189,248,0.4)' },
@@ -13,8 +13,17 @@ const MOODS = [
 const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 export default function MoodTracker() {
-  const [selectedMood, setSelectedMood] = useState<number | null>(null);
-  const [weekMoods] = useState([3, 4, 2, 4, null, null, null]);
+  const [selectedMood, setSelectedMood] = usePersistedState<number | null>('mood-today', null);
+  const [weekMoods, setWeekMoods] = usePersistedState<(number | null)[]>('mood-week', [null, null, null, null, null, null, null]);
+
+  const handleMoodSelect = (moodIndex: number) => {
+    setSelectedMood(moodIndex);
+    // Update today's entry in the weekly moods
+    const todayIndex = (new Date().getDay() + 6) % 7; // Monday = 0
+    const newWeekMoods = [...weekMoods];
+    newWeekMoods[todayIndex] = moodIndex;
+    setWeekMoods(newWeekMoods);
+  };
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
@@ -31,7 +40,7 @@ export default function MoodTracker() {
 
         <div className="flex justify-between gap-2 mb-6">
           {MOODS.map((mood, i) => (
-            <motion.button key={i} onClick={() => setSelectedMood(i)} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}
+            <motion.button key={i} onClick={() => handleMoodSelect(i)} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}
               className="flex flex-col items-center gap-1.5 group">
               <motion.div animate={{
                 scale: selectedMood === i ? 1.2 : 1,
