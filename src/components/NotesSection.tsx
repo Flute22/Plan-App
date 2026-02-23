@@ -1,0 +1,51 @@
+import { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
+import { StickyNote } from 'lucide-react';
+
+export default function NotesSection() {
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    const savedNote = localStorage.getItem('planner-note');
+    if (savedNote) setNote(savedNote);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('planner-note', note);
+  }, [note]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: 0.4 }}
+      className="glass-card p-6 h-full flex flex-col relative overflow-hidden"
+      style={{
+        background: 'linear-gradient(135deg, rgba(251,191,36,0.06) 0%, rgba(245,158,11,0.04) 100%)',
+      }}
+    >
+      <div className="absolute -right-8 -top-8 w-28 h-28 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-full blur-3xl" />
+
+      <div className="relative z-10 flex flex-col flex-1">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20">
+            <StickyNote size={18} className="text-amber-400" />
+          </div>
+          <h2 className="font-heading text-lg font-bold text-white/90">Brain Dump</h2>
+        </div>
+
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Ideas, dreams, random thoughts..."
+          className="w-full flex-1 bg-transparent border-none resize-none outline-none text-white/60 placeholder-white/15 text-sm leading-relaxed custom-scrollbar"
+          spellCheck={false}
+        />
+
+        <div className="text-[10px] text-white/15 text-right mt-2 font-medium">
+          Auto-saving...
+        </div>
+      </div>
+    </motion.div>
+  );
+}
