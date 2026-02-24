@@ -9,6 +9,8 @@ import LoginPage from './components/auth/LoginPage';
 import SignUpPage from './components/auth/SignUpPage';
 import ForgotPasswordPage from './components/auth/ForgotPasswordPage';
 import ResetPasswordPage from './components/auth/ResetPasswordPage';
+import PriorityCheckInModal from './components/PriorityCheckInModal';
+import { usePriorityCheckIn } from './hooks/usePriorityCheckIn';
 
 // Admin components
 import AdminLoginPage from './components/admin/AdminLoginPage';
@@ -65,6 +67,9 @@ export default function App() {
   const [page, setPage] = useState<Page>(getPageFromHash);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+
+  // Priority Check-In Logic
+  const checkIn = usePriorityCheckIn();
 
   // Sync hash changes
   useEffect(() => {
@@ -316,6 +321,16 @@ export default function App() {
           </p>
         </footer>
       </div>
+
+      {/* Priority Check-In Modal */}
+      <PriorityCheckInModal
+        isOpen={checkIn.isOpen}
+        priorities={checkIn.incompletePriorities}
+        onWorking={checkIn.resetTimer}
+        onSoon={checkIn.snooze}
+        onReschedule={checkIn.reschedule}
+        onClose={checkIn.close}
+      />
     </div>
   );
 }
