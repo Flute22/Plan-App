@@ -347,14 +347,14 @@ export default function App() {
         <motion.header
           animate={{ opacity: isFocusMode ? 0 : 1, height: isFocusMode ? 0 : 'auto', marginBottom: isFocusMode ? 0 : 40 }}
           transition={{ duration: 0.5 }}
-          className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 overflow-hidden"
+          className="header-container flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 overflow-hidden"
         >
           <div>
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="mb-2">
               <Logo variant="horizontal" size={40} />
             </motion.div>
             <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
-              className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold tracking-tight leading-tight">
+              className="greeting-text text-4xl sm:text-5xl lg:text-6xl font-display font-bold tracking-tight leading-tight">
               <span className="gradient-text">
                 {animState === 'revealing' || animState === 'settling' ? typedGreeting.split(',')[0] || getGreeting() : getGreeting()}
               </span>
@@ -363,11 +363,11 @@ export default function App() {
               </span>
             </motion.h1>
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}
-              className="text-white/25 mt-2 font-medium text-sm sm:text-base">
+              className="greeting-subtitle text-white/25 mt-2 font-medium text-sm sm:text-base">
               {animState === 'revealing' || animState === 'settling' ? 'A fresh page, a fresh start 📖' : 'Let\'s make today beautiful ✨'}
             </motion.p>
           </div>
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex items-center gap-3">
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="header-right flex items-center gap-3">
             {/* New Day Button */}
             <button
               onClick={() => setIsResetModalOpen(true)}
@@ -376,7 +376,7 @@ export default function App() {
               Start New Day 📖
             </button>
             {/* User pill */}
-            <div className="glass-card !rounded-2xl px-4 py-2.5 flex items-center gap-2.5 !bg-white/5">
+            <div className="user-pill glass-card !rounded-2xl px-4 py-2.5 flex items-center gap-2.5 !bg-white/5">
               <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-500/30 to-rose-500/30 flex items-center justify-center">
                 <User size={14} className="text-white/70" />
               </div>
@@ -392,11 +392,16 @@ export default function App() {
               </button>
             </div>
             {/* Date pill */}
-            <div className="glass-card !rounded-2xl px-5 py-3 flex items-center gap-3 !bg-white/5">
+            <div className="date-pill glass-card !rounded-2xl px-5 py-3 flex items-center gap-3 !bg-white/5">
               <Calendar size={16} className="text-white/30" />
-              <span className="text-sm font-medium text-white/50">
-                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-              </span>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+                <span className="date-full text-sm font-medium text-white/50">
+                  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                </span>
+                <span className="date-short text-sm font-medium text-white/50 hidden">
+                  {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </span>
+              </div>
               <div className="w-px h-4 bg-white/10" />
               {getTimeIcon()}
             </div>

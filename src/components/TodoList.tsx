@@ -57,7 +57,7 @@ function TodoInput({ index, todo, cfg, isFilled, inputRef, onChange, onKeyDown }
       onKeyDown={onKeyDown}
       disabled={todo.completed}
       placeholder={`Task ${index + 1}...`}
-      className={`flex-1 bg-transparent border-none outline-none text-sm min-w-0 placeholder-white/10 resize-none overflow-hidden py-0 ${todo.completed ? 'text-white/20 line-through' : isFilled ? cfg.textColor : 'text-white/50'
+      className={`add-task-input flex-1 bg-transparent border-none outline-none text-sm min-w-0 placeholder-white/10 resize-none overflow-hidden py-0 ${todo.completed ? 'text-white/20 line-through' : isFilled ? cfg.textColor : 'text-white/50'
         }`}
     />
   );
@@ -226,7 +226,7 @@ export default function TodoList() {
               return (
                 <motion.div layout key={todo.id}
                   initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                  className={`group flex items-center gap-2 p-1.5 rounded-xl transition-all border-l-[3px] ${todo.completed
+                  className={`todo-item group flex items-center gap-2 p-1.5 rounded-xl transition-all border-l-[3px] ${todo.completed
                     ? 'bg-white/3 border-l-white/10'
                     : isFilled
                       ? `bg-white/5 hover:bg-white/8 ${cfg.borderL}`
@@ -234,7 +234,7 @@ export default function TodoList() {
                     }`}>
                   {/* Checkbox */}
                   <button onClick={() => toggleTodo(todo.id)}
-                    className={`transition-colors flex-shrink-0 ${!isFilled ? 'text-white/8 cursor-default' : todo.completed ? 'text-amber-400' : 'text-white/15 hover:text-amber-400'}`}>
+                    className={`todo-checkbox transition-colors flex-shrink-0 ${!isFilled ? 'text-white/8 cursor-default' : todo.completed ? 'text-amber-400' : 'text-white/15 hover:text-amber-400'}`}>
                     <motion.div animate={{ scale: todo.completed ? [1, 1.2, 1] : 1 }} transition={{ duration: 0.3 }}>
                       {todo.completed ? <CheckCircle2 size={18} /> : <Circle size={18} />}
                     </motion.div>

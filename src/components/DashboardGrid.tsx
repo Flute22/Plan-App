@@ -161,18 +161,27 @@ export default function DashboardGrid({ isFocusMode, onFocusChange, animState }:
     // Update component map with real focus handler if needed
     COMPONENT_MAP['timer'] = <PomodoroTimer onFocusChange={onFocusChange} />;
 
-    const renderSection = (id: string, index: number) => (
-        <SortableSection key={id} id={id}>
-            <ScrollRevealSection delay={index * 50}>
-                <div
-                    className={`card-reveal ${animState === 'idle' || animState === 'revealing' || animState === 'complete' ? 'active' : ''}`}
-                    style={{ animationDelay: `${animState === 'revealing' ? index * 120 : 0}ms` }}
-                >
-                    {COMPONENT_MAP[id]}
-                </div>
-            </ScrollRevealSection>
-        </SortableSection>
-    );
+    const renderSection = (id: string, index: number) => {
+        const widgetClass = id === 'priorities' || id === 'top-priorities' ? 'priorities-card' :
+            id === 'water' || id === 'hydration' ? 'hydration-card' :
+                id === 'todo' || id === 'todo-list' ? 'todo-card' :
+                    id === 'schedule' || id === 'daily-schedule' ? 'schedule-card' :
+                        id === 'sleep' ? 'sleep-card' :
+                            id === 'timer' ? 'focus-card' : '';
+
+        return (
+            <SortableSection key={id} id={id}>
+                <ScrollRevealSection delay={index * 50}>
+                    <div
+                        className={`card-reveal ${widgetClass} ${animState === 'idle' || animState === 'revealing' || animState === 'complete' ? 'active' : ''}`}
+                        style={{ animationDelay: `${animState === 'revealing' ? index * 120 : 0}ms` }}
+                    >
+                        {COMPONENT_MAP[id]}
+                    </div>
+                </ScrollRevealSection>
+            </SortableSection>
+        );
+    };
 
     return (
         <DndContext
@@ -182,44 +191,40 @@ export default function DashboardGrid({ isFocusMode, onFocusChange, animState }:
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
         >
-            <div className={isFocusMode
+            <div className={`dashboard-container ${isFocusMode
                 ? 'flex flex-col items-center gap-6 max-w-3xl mx-auto w-full'
                 : 'grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6'
-            }>
+                }`}>
                 {/* Left Column */}
-                <div className={`lg:col-span-5 space-y-5 lg:space-y-6 transition-all duration-500 ${isFocusMode ? 'hidden' : ''}`}>
+                <div className={`col-left lg:col-span-5 space-y-5 lg:space-y-6 transition-all duration-500 ${isFocusMode ? 'hidden' : ''}`}>
                     <SortableContext items={columns.left} strategy={verticalListSortingStrategy}>
                         {columns.left.map((id, idx) => renderSection(id, idx))}
                     </SortableContext>
                 </div>
 
                 {/* Center Column */}
-                <div className={`lg:col-span-4 space-y-5 lg:space-y-6 transition-all duration-500 ${isFocusMode ? 'hidden' : ''}`}>
+                <div className={`col-center lg:col-span-4 space-y-5 lg:space-y-6 transition-all duration-500 ${isFocusMode ? 'hidden' : ''}`}>
                     <SortableContext items={columns.center} strategy={verticalListSortingStrategy}>
                         {columns.center.map((id, idx) => renderSection(id, idx + columns.left.length))}
                     </SortableContext>
                 </div>
 
                 {/* Right Column / Focus */}
-                <div className={isFocusMode ? 'w-full max-w-sm mx-auto' : 'lg:col-span-3 space-y-5 lg:space-y-6'}>
+                <div className={`col-right ${isFocusMode ? 'w-full max-w-sm mx-auto' : 'lg:col-span-3 space-y-5 lg:space-y-6'}`}>
                     <SortableContext items={isFocusMode ? ['timer'] : columns.right} strategy={verticalListSortingStrategy}>
                         {isFocusMode
                             ? renderSection('timer', 0)
                             : columns.right.map((id, idx) => renderSection(id, idx + columns.left.length + columns.center.length))}
                     </SortableContext>
-                    {!isFocusMode && (
-                        // Background spacer or additional logic if needed
-                        <div className="hidden" />
+
+                    {/* Focus mode widgets */}
+                    {isFocusMode && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full pt-4">
+                            {renderSection('notes', 1)}
+                            {renderSection('music', 2)}
+                        </div>
                     )}
                 </div>
-
-                {/* Focus mode: Notes + Music side-by-side */}
-                {isFocusMode && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                        {renderSection('notes', 1)}
-                        {renderSection('music', 2)}
-                    </div>
-                )}
             </div>
 
             <DragOverlay>

@@ -109,10 +109,10 @@ export default function SignUpPage({ onNavigate }: { onNavigate: (page: string) 
             >
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <div className="flex justify-center mb-5">
+                    <div className="auth-logo flex justify-center mb-5">
                         <Logo variant="icon" size={48} />
                     </div>
-                    <h1 className="text-3xl font-display font-bold text-white mb-2">Create Account</h1>
+                    <h1 className="auth-heading text-3xl font-display font-bold text-white mb-2">Create Account</h1>
                     <p className="text-white/40 text-sm">Start your productivity journey with flow-Day</p>
                 </div>
 
@@ -121,7 +121,7 @@ export default function SignUpPage({ onNavigate }: { onNavigate: (page: string) 
                     <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className={!isSupabaseConfigured() ? "auth-info" : "auth-error"}
+                        className={`auth-error-banner ${!isSupabaseConfigured() ? "auth-info" : "auth-error"}`}
                     >
                         {!isSupabaseConfigured() ? (
                             <>
@@ -254,7 +254,7 @@ export default function SignUpPage({ onNavigate }: { onNavigate: (page: string) 
                         whileTap={{ scale: canSubmit ? 0.98 : 1 }}
                         type="submit"
                         disabled={!canSubmit || loading}
-                        className="auth-submit"
+                        className="auth-submit auth-submit-btn"
                     >
                         {loading ? (
                             <div className="auth-spinner" />

@@ -31,7 +31,7 @@ function PriorityInput({ index, priority, isLocked, completed, hasDigit, inputRe
       onKeyDown={onKeyDown}
       disabled={isLocked}
       placeholder={index === 0 ? 'Most important task...' : index === 1 ? 'Second priority...' : 'Also get to...'}
-      className={`w-full pl-14 pr-12 py-3.5 rounded-xl border transition-all outline-none text-sm resize-none overflow-hidden
+      className={`priority-input w-full pl-14 pr-12 py-3.5 rounded-xl border transition-all outline-none text-sm resize-none overflow-hidden
         ${completed
           ? 'bg-white/3 border-white/5 text-white/25 line-through'
           : isLocked
@@ -113,7 +113,7 @@ export default function DailyPriorities() {
         <div className="space-y-3">
           {priorities.map((priority, index) => (
             <div key={index} className="relative group">
-              <div className={`absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-lg font-semibold text-sm transition-all ${priority.trim()
+              <div className={`priority-number absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-lg font-semibold text-sm transition-all ${priority.trim()
                 ? `bg-gradient-to-br ${checkGradients[index]} text-white shadow-lg`
                 : 'border border-white/10 text-white/35'
                 }`}>
