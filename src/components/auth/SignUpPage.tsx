@@ -4,6 +4,7 @@ import { UserPlus, Mail, Lock, Eye, EyeOff, User, CheckCircle2, AlertCircle, Arr
 import { useAuth } from '../../contexts/AuthContext';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import Logo from '../Logo';
+import SignupSuccessModal from './SignupSuccessModal';
 
 // ─── Password strength ──────────────────────────────────────────────────────
 
@@ -43,6 +44,7 @@ export default function SignUpPage({ onNavigate }: { onNavigate: (page: string) 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     // Real-time validation
     const emailValid = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email), [email]);
@@ -63,14 +65,17 @@ export default function SignUpPage({ onNavigate }: { onNavigate: (page: string) 
         if (authError) {
             setError(authError.message);
             setLoading(false);
+        } else if (isSupabaseConfigured()) {
+            setLoading(false);
+            setShowSuccessModal(true);
         } else {
+            // Offline mode: just proceed
             setSuccess(true);
-            // Auth state change will auto-redirect to dashboard
         }
     }, [canSubmit, email, password, fullName, signUp]);
 
-    // ── Success screen ─────────────────────────────────────────────────────
-    if (success) {
+    // ── Pre-redirect Success screen (Offline Mode Only) ───────────────────
+    if (success && !isSupabaseConfigured()) {
         return (
             <div className="auth-page">
                 <motion.div
@@ -264,13 +269,35 @@ export default function SignUpPage({ onNavigate }: { onNavigate: (page: string) 
                 </form>
 
                 {/* Footer */}
-                <p className="text-center text-white/30 text-sm mt-6">
-                    Already have an account?{' '}
-                    <button onClick={() => onNavigate('login')} className="auth-link">
-                        Sign In
-                    </button>
-                </p>
+                <Footer
+                    onNavigate={onNavigate}
+                    showSuccessModal={showSuccessModal}
+                    email={email}
+                />
             </motion.div>
         </div>
+    );
+}
+
+const Footer = ({ onNavigate, showSuccessModal, email }: { onNavigate: (page: string) => void, showSuccessModal: boolean, email: string }) => {
+    return (
+        <>
+            <p className="text-center text-white/30 text-sm mt-6">
+                Already have an account?{' '}
+                <button onClick={() => onNavigate('login')} className="auth-link">
+                    Sign In
+                </button>
+            </p>
+            <SignupSuccessModal
+                isOpen={showSuccessModal}
+                email={email}
+                onClose={() => {
+                    // Redirect or stay as per user's preference after "OK"
+                    // But user said "Do NOT redirect or clear the form until user clicks OK"
+                    // So we just close it for now.
+                    window.location.reload(); // Simple way to clear/reset after confirmation
+                }}
+            />
+        </>
     );
 }

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
+import { BASE_URL } from '../config';
 import type { User, Session, AuthError } from '@supabase/supabase-js';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -141,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       options: {
         data: { full_name: fullName, role: 'user' },
+        emailRedirectTo: `${BASE_URL}/`,
       },
     });
 
@@ -193,7 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return { error: null }; // Silent success for local mode
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/#/reset-password`,
+      redirectTo: `${BASE_URL}/#/reset-password`,
     });
 
     return { error };
