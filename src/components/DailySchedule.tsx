@@ -170,7 +170,7 @@ export default function DailySchedule() {
                     )}
                 </AnimatePresence>
 
-                <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar max-h-[500px]">
+                <div className="flex-1 overflow-y-auto overscroll-contain pr-1 custom-scrollbar max-h-[500px]">
                     <div className="space-y-1">
                         {visibleSchedule.map((item) => {
                             const isCurrent = item.id === activeId;
