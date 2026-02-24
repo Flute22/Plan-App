@@ -191,82 +191,77 @@ CREATE POLICY "Users read own history" ON activity_history
 -- =====================================================================
 -- This function calculates the productivity score for a specific date,
 -- saves it to history, and then clears the old app_state for that day.
--- 12. History table — snapshots of daily data
--- =====================================================================
-CREATE TABLE IF NOT EXISTS history (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  date DATE NOT NULL,
-  priorities JSONB DEFAULT '[]',
-  todos JSONB DEFAULT '[]',
-  hydration INTEGER DEFAULT 0,
-  schedule JSONB DEFAULT '[]',
-  archived_at TIMESTAMPTZ DEFAULT now()
-);
-
-ALTER TABLE history ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users read own history snapshot" ON history;
-CREATE POLICY "Users read own history snapshot" ON history
-  FOR SELECT USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users insert own history snapshot" ON history;
-CREATE POLICY "Users insert own history snapshot" ON history
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
--- 13. RPC: Archive and Reset Day
--- =====================================================================
-CREATE OR REPLACE FUNCTION archive_and_reset_day(target_date TEXT)
-RETURNS VOID
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  uid UUID := auth.uid();
-  p_val JSONB := '[]';
-  t_val JSONB := '[]';
-  h_val INTEGER := 0;
-  s_val JSONB := '[]';
-  state_record RECORD;
-BEGIN
-  IF uid IS NULL THEN RETURN; END IF;
-
-  -- 1. Gather data for the snapshot
-  FOR state_record IN 
-    SELECT key, value FROM app_state 
-    WHERE user_id = uid AND key LIKE '%' || target_date
-  LOOP
-    IF state_record.key LIKE '%priorities%' THEN
-      p_val := state_record.value;
-    ELSIF state_record.key LIKE '%todos%' THEN
-      t_val := state_record.value;
-    ELSIF state_record.key LIKE '%water-glasses%' THEN
-      h_val := state_record.value::integer;
-    ELSIF state_record.key LIKE '%schedule%' THEN
-      s_val := state_record.value;
-    END IF;
-  END LOOP;
-
-  -- 2. Insert into history
-  INSERT INTO history (user_id, date, priorities, todos, hydration, schedule)
-  VALUES (uid, target_date::date, p_val, t_val, h_val, s_val);
-
-  -- 3. Run the score calculation (archives to activity_history)
-  PERFORM calculate_daily_score(target_date);
-
-  -- 4. Delete app_state for this user and this specific date
-  DELETE FROM app_state 
-  WHERE user_id = uid 
-  AND key LIKE '%' || target_date;
-END;
-$$;
-
--- 14. Existing RPC Update: calculate_daily_score
--- =====================================================================
 CREATE OR REPLACE FUNCTION calculate_daily_score(target_date TEXT)
 RETURNS INTEGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
--- ... rest of existing function remains same or similar ...
+DECLARE
+  uid UUID := auth.uid();
+  priorities_done INTEGER := 0;
+  todos_done INTEGER := 0;
+  total_todos INTEGER := 0;
+  water_glasses INTEGER := 0;
+  pomodoro_count INTEGER := 0;
+  final_score INTEGER := 0;
+  state_record RECORD;
+  val JSONB;
+BEGIN
+  IF uid IS NULL THEN RETURN 0; END IF;
 
+  -- 1. Scan app_state for this user and date to calculate score
+  FOR state_record IN 
+    SELECT key, value FROM app_state 
+    WHERE user_id = uid AND key LIKE '%' || target_date
+  LOOP
+    val := state_record.value;
+    
+    IF state_record.key LIKE '%priorities-completed%' THEN
+      SELECT count(*) INTO priorities_done FROM jsonb_array_elements(val) x WHERE x::boolean = true;
+    ELSIF state_record.key LIKE '%todos%' THEN
+      SELECT count(*) INTO total_todos FROM jsonb_array_elements(val);
+      SELECT count(*) INTO todos_done FROM jsonb_array_elements(val) x WHERE (x->>'completed')::boolean = true;
+    ELSIF state_record.key LIKE '%water-glasses%' THEN
+      water_glasses := val::integer;
+    ELSIF state_record.key LIKE '%pomodoro-sessions%' THEN
+      pomodoro_count := val::integer;
+    END IF;
+  END LOOP;
+
+  -- 2. Calculate final score (0-100)
+  -- Weights: Priorities (40%), Todos (40%), Water (10%), Pomodoro (10%)
+  final_score := (priorities_done * 13) + 
+                 (CASE WHEN total_todos > 0 THEN (todos_done::float / total_todos * 40)::int ELSE 20 END) +
+                 (LEAST(water_glasses, 8) * 1.25) +
+                 (LEAST(pomodoro_count, 4) * 2.5);
+  
+  final_score := LEAST(GREATEST(final_score, 0), 100);
+
+  -- 3. Save to activity_history (upsert)
+  INSERT INTO activity_history (user_id, day, score, details)
+  VALUES (
+    uid, 
+    target_date::date, 
+    final_score, 
+    jsonb_build_object(
+      'priorities', priorities_done,
+      'todos', todos_done,
+      'water', water_glasses,
+      'pomos', pomodoro_count
+    )
+  )
+  ON CONFLICT (user_id, day) DO UPDATE SET 
+    score = EXCLUDED.score,
+    details = EXCLUDED.details,
+    created_at = now();
+
+  -- 4. Delete old data (optional, but keeps DB clean)
+  -- We don't delete today's keys, just old ones
+  DELETE FROM app_state 
+  WHERE user_id = uid 
+  AND key LIKE '%flowday_%'
+  AND key NOT LIKE '%' || to_char(CURRENT_DATE, 'YYYY-MM-DD');
+
+  RETURN final_score;
+END;
+$$;

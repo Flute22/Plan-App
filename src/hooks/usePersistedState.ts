@@ -3,9 +3,17 @@ import { supabase } from '../lib/supabase';
 
 /**
  * Global state for the "current day" being viewed/edited.
- * Default is today's date (YYYY-MM-DD).
+ * Persistence: Load from localStorage if available, otherwise default to today.
  */
-let globalDay = new Date().toISOString().slice(0, 10);
+const getStoredDay = () => {
+    try {
+        const stored = localStorage.getItem('flowday_active_day');
+        if (stored) return stored;
+    } catch { /* ignore */ }
+    return new Date().toISOString().slice(0, 10);
+};
+
+let globalDay = getStoredDay();
 const dayListeners = new Set<(day: string) => void>();
 
 export function getGlobalDay(): string {
@@ -13,12 +21,14 @@ export function getGlobalDay(): string {
 }
 
 /**
- * Updates the global day across all hook instances.
- * This triggers a re-fetch and state update for any hook with `perDay: true`.
+ * Updates the global day across all hook instances and persists it.
  */
 export function updateGlobalDay(newDay: string) {
     if (newDay === globalDay) return;
     globalDay = newDay;
+    try {
+        localStorage.setItem('flowday_active_day', newDay);
+    } catch { /* ignore */ }
     dayListeners.forEach(listener => listener(newDay));
 }
 

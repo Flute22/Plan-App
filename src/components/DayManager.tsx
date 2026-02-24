@@ -10,56 +10,22 @@ export default function DayManager() {
 
     useEffect(() => {
         const checkDayChange = async () => {
-            const now = new Date();
-            const todayString = now.toISOString().slice(0, 10);
+            const todayString = new Date().toISOString().slice(0, 10);
             const activeDay = getGlobalDay();
 
-            // If the actual calendar day has changed since our last check
-            if (todayString !== activeDay) {
-                console.log(`[DayManager] Day changed detected: ${activeDay} -> ${todayString}`);
-
-                try {
-                    if (!supabase) {
-                        // Silent fallback - just update the UI state
-                        updateGlobalDay(todayString);
-                        setLastCheck(todayString);
-                        setShowNotification(true);
-                        setTimeout(() => setShowNotification(false), 8000);
-                        return;
-                    }
-
-                    // 1. Calculate and save score for the day that just ended
-                    const { data: score, error } = await supabase.rpc('calculate_daily_score', {
-                        target_date: activeDay
-                    });
-
-                    if (!error) {
-                        console.log(`[DayManager] Saved score for ${activeDay}: ${score}%`);
-                    } else {
-                        console.error('[DayManager] Error saving daily score:', error);
-                    }
-                } catch (err) {
-                    console.error('[DayManager] Unexpected error during reset:', err);
-                }
-
-                // 2. Update global day to today
-                updateGlobalDay(todayString);
-                setLastCheck(todayString);
-
-                // 3. Show "Fresh Start" notification
+            // Notify if a NEW calendar day has started, but don't auto-reset anymore
+            if (todayString !== activeDay && !showNotification) {
                 setShowNotification(true);
-                setTimeout(() => setShowNotification(false), 8000);
+                // Notification will show "Fresh Start" message or we can customize it
             }
         };
 
-        // Check every minute
+        // We still check occasionally to show the notification, but no auto-reset
         const interval = setInterval(checkDayChange, 60000);
-
-        // Also check immediately on mount
         checkDayChange();
 
         return () => clearInterval(interval);
-    }, []);
+    }, [showNotification]);
 
     return (
         <AnimatePresence>

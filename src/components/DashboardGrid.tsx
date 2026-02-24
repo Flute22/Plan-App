@@ -32,19 +32,27 @@ import GratitudeJournal from './GratitudeJournal';
 import ActivityChart from './ActivityChart';
 import DailySchedule from './DailySchedule';
 import { SortableSection } from './SortableSection';
+import { ScrollRevealSection } from './ScrollRevealSection';
 
 const COMPONENT_MAP: Record<string, React.ReactNode> = {
+    // Current IDs
     'priorities': <DailyPriorities />,
     'todo': <TodoList />,
     'affirmation': <DailyAffirmation />,
     'water': <WaterTracker />,
     'notes': <NotesSection />,
-    'timer': <PomodoroTimer onFocusChange={() => { }} />, // Placeholder handler
+    'timer': <PomodoroTimer onFocusChange={() => { }} />,
     'music': <MusicPlayer />,
     'sleep': <SleepTracker />,
     'gratitude': <GratitudeJournal />,
     'chart': <ActivityChart />,
     'schedule': <DailySchedule />,
+    // Legacy IDs for backward compatibility
+    'top-priorities': <DailyPriorities />,
+    'todo-list': <TodoList />,
+    'hydration': <WaterTracker />,
+    'daily-schedule': <DailySchedule />,
+    'focus-timer': <PomodoroTimer onFocusChange={() => { }} />
 };
 
 const INITIAL_LAYOUT = {
@@ -53,7 +61,11 @@ const INITIAL_LAYOUT = {
     right: ['timer', 'water', 'sleep', 'music'],
 };
 
-export default function DashboardGrid({ isFocusMode, onFocusChange }: { isFocusMode: boolean, onFocusChange: (f: boolean) => void }) {
+export default function DashboardGrid({ isFocusMode, onFocusChange, animState }: {
+    isFocusMode: boolean,
+    onFocusChange: (f: boolean) => void,
+    animState: 'idle' | 'lifting' | 'flipping' | 'settling' | 'revealing' | 'complete'
+}) {
     const [columns, setColumns] = usePersistedState<Record<string, string[]>>('dashboard-layout', INITIAL_LAYOUT);
     const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -149,9 +161,16 @@ export default function DashboardGrid({ isFocusMode, onFocusChange }: { isFocusM
     // Update component map with real focus handler if needed
     COMPONENT_MAP['timer'] = <PomodoroTimer onFocusChange={onFocusChange} />;
 
-    const renderSection = (id: string) => (
+    const renderSection = (id: string, index: number) => (
         <SortableSection key={id} id={id}>
-            {COMPONENT_MAP[id]}
+            <ScrollRevealSection delay={index * 50}>
+                <div
+                    className={`card-reveal ${animState === 'idle' || animState === 'revealing' || animState === 'complete' ? 'active' : ''}`}
+                    style={{ animationDelay: `${animState === 'revealing' ? index * 120 : 0}ms` }}
+                >
+                    {COMPONENT_MAP[id]}
+                </div>
+            </ScrollRevealSection>
         </SortableSection>
     );
 
@@ -170,21 +189,23 @@ export default function DashboardGrid({ isFocusMode, onFocusChange }: { isFocusM
                 {/* Left Column */}
                 <div className={`lg:col-span-5 space-y-5 lg:space-y-6 transition-all duration-500 ${isFocusMode ? 'hidden' : ''}`}>
                     <SortableContext items={columns.left} strategy={verticalListSortingStrategy}>
-                        {columns.left.map(renderSection)}
+                        {columns.left.map((id, idx) => renderSection(id, idx))}
                     </SortableContext>
                 </div>
 
                 {/* Center Column */}
                 <div className={`lg:col-span-4 space-y-5 lg:space-y-6 transition-all duration-500 ${isFocusMode ? 'hidden' : ''}`}>
                     <SortableContext items={columns.center} strategy={verticalListSortingStrategy}>
-                        {columns.center.map(renderSection)}
+                        {columns.center.map((id, idx) => renderSection(id, idx + columns.left.length))}
                     </SortableContext>
                 </div>
 
                 {/* Right Column / Focus */}
                 <div className={isFocusMode ? 'w-full max-w-sm mx-auto' : 'lg:col-span-3 space-y-5 lg:space-y-6'}>
                     <SortableContext items={isFocusMode ? ['timer'] : columns.right} strategy={verticalListSortingStrategy}>
-                        {isFocusMode ? renderSection('timer') : columns.right.map(renderSection)}
+                        {isFocusMode
+                            ? renderSection('timer', 0)
+                            : columns.right.map((id, idx) => renderSection(id, idx + columns.left.length + columns.center.length))}
                     </SortableContext>
                     {!isFocusMode && (
                         // Background spacer or additional logic if needed
@@ -195,8 +216,8 @@ export default function DashboardGrid({ isFocusMode, onFocusChange }: { isFocusM
                 {/* Focus mode: Notes + Music side-by-side */}
                 {isFocusMode && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                        {renderSection('notes')}
-                        {renderSection('music')}
+                        {renderSection('notes', 1)}
+                        {renderSection('music', 2)}
                     </div>
                 )}
             </div>

@@ -10,7 +10,12 @@ import SignUpPage from './components/auth/SignUpPage';
 import ForgotPasswordPage from './components/auth/ForgotPasswordPage';
 import ResetPasswordPage from './components/auth/ResetPasswordPage';
 import PriorityCheckInModal from './components/PriorityCheckInModal';
+import StartNewDayModal from './components/StartNewDayModal';
 import { usePriorityCheckIn } from './hooks/usePriorityCheckIn';
+import { dayService } from './lib/dayService';
+import { getGlobalDay } from './hooks/usePersistedState';
+
+type AnimationState = 'idle' | 'lifting' | 'flipping' | 'settling' | 'revealing' | 'complete';
 
 // Admin components
 import AdminLoginPage from './components/admin/AdminLoginPage';
@@ -67,6 +72,10 @@ export default function App() {
   const [page, setPage] = useState<Page>(getPageFromHash);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [animState, setAnimState] = useState<AnimationState>('idle');
+  const [resetRevision, setResetRevision] = useState(0);
+  const [typedGreeting, setTypedGreeting] = useState('');
 
   // Priority Check-In Logic
   const checkIn = usePriorityCheckIn();
@@ -131,16 +140,80 @@ export default function App() {
     }
   }, [user, loading, page, navigate, isAdmin]);
 
-  const handleFocusChange = useCallback((focused: boolean) => {
-    setIsFocusMode(focused);
-  }, []);
-
+  // auth signout
   const handleLogout = useCallback(async () => {
     setLoggingOut(true);
     await signOut();
     navigate('login');
     setLoggingOut(false);
   }, [signOut, navigate]);
+
+  const handleFocusChange = useCallback((focused: boolean) => {
+    setIsFocusMode(focused);
+  }, []);
+
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+
+  // Typewriter effect logic
+  useEffect(() => {
+    if (animState === 'revealing') {
+      const greeting = `${getGreeting()}, ${userName.split(' ')[0]} ✨`;
+      let i = 0;
+      setTypedGreeting('');
+      const timer = setInterval(() => {
+        setTypedGreeting(greeting.slice(0, i + 1));
+        i++;
+        if (i >= greeting.length) clearInterval(timer);
+      }, 40);
+      return () => clearInterval(timer);
+    }
+  }, [animState, userName]);
+
+  const handleStartNewDay = useCallback(async () => {
+    setIsResetModalOpen(false);
+
+    // 1. LIFTING (400ms)
+    setAnimState('lifting');
+    await new Promise(r => setTimeout(r, 400));
+
+    // 2. FLIPPING (950ms)
+    setAnimState('flipping');
+
+    // Play sound if possible
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.type = 'pink' as any;
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      gainNode.gain.setValueAtTime(0.005, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.8);
+    } catch { /* ignore */ }
+
+    // Start archiving in background
+    const activeDay = getGlobalDay();
+    dayService.archiveAndResetDay(activeDay);
+
+    await new Promise(r => setTimeout(r, 950));
+
+    // 3. SETTLING (200ms)
+    setAnimState('settling');
+    setResetRevision(prev => prev + 1);
+    await new Promise(r => setTimeout(r, 200));
+
+    // 4. REVEALING
+    setAnimState('revealing');
+    await new Promise(r => setTimeout(r, 1200));
+
+    setAnimState('complete');
+    setTimeout(() => {
+      setAnimState('idle');
+      setTypedGreeting('');
+    }, 500);
+  }, [userName]);
 
   // ── Loading screen ─────────────────────────────────────────────────────
   if (loading) {
@@ -224,7 +297,7 @@ export default function App() {
     );
   }
 
-  // Reset password page (can be accessed with or without full auth — Supabase handles the token)
+  // Reset password page (can be accessed with or without full auth)
   if (page === 'reset-password') {
     return (
       <div className="min-h-screen relative overflow-hidden">
@@ -236,10 +309,29 @@ export default function App() {
   }
 
   // ── Protected Dashboard ────────────────────────────────────────────────
-  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
-
   return (
     <div className="min-h-screen relative overflow-hidden">
+      {/* Cinematic Atmosphere */}
+      <div className={`cinematic-atmosphere ${animState !== 'idle' ? 'active' : ''}`} />
+
+      {/* Particle Container - more subtle count */}
+      {(animState === 'flipping' || animState === 'lifting') && (
+        <div className="particle-container">
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="particle active"
+              style={{
+                top: `${30 + Math.random() * 40}%`,
+                right: `${Math.random() * 15}px`,
+                '--drift': `${(Math.random() - 0.5) * 40}px`,
+                animationDelay: `${i * 150}ms`
+              } as any}
+            />
+          ))}
+        </div>
+      )}
+
       {/* ===== Floating Background Orbs ===== */}
       <div className="orb w-72 h-72 bg-amber-500/20 top-[-5%] left-[10%]" style={{ animationDelay: '0s' }} />
       <div className="orb w-96 h-96 bg-rose-500/15 top-[30%] right-[-10%]" style={{ animationDelay: '5s' }} />
@@ -263,15 +355,26 @@ export default function App() {
             </motion.div>
             <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
               className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold tracking-tight leading-tight">
-              <span className="gradient-text">{getGreeting()}</span>
-              <span className="text-white/80">, {userName.split(' ')[0]}</span>
+              <span className="gradient-text">
+                {animState === 'revealing' || animState === 'settling' ? typedGreeting.split(',')[0] || getGreeting() : getGreeting()}
+              </span>
+              <span className="text-white/80">
+                , {animState === 'revealing' || animState === 'settling' ? typedGreeting.split(',')[1]?.trim() || '' : userName.split(' ')[0]}
+              </span>
             </motion.h1>
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}
               className="text-white/25 mt-2 font-medium text-sm sm:text-base">
-              Let's make today beautiful ✨
+              {animState === 'revealing' || animState === 'settling' ? 'A fresh page, a fresh start 📖' : 'Let\'s make today beautiful ✨'}
             </motion.p>
           </div>
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex items-center gap-3">
+            {/* New Day Button */}
+            <button
+              onClick={() => setIsResetModalOpen(true)}
+              className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-500 font-bold text-sm flex items-center gap-2 hover:from-amber-500/30 hover:to-orange-500/30 transition-all shadow-lg shadow-amber-500/5 active:scale-95"
+            >
+              Start New Day 📖
+            </button>
             {/* User pill */}
             <div className="glass-card !rounded-2xl px-4 py-2.5 flex items-center gap-2.5 !bg-white/5">
               <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-500/30 to-rose-500/30 flex items-center justify-center">
@@ -312,8 +415,31 @@ export default function App() {
           </motion.div>
         )}
 
-        {/* ===== Dashboard Grid ===== */}
-        <DashboardGrid isFocusMode={isFocusMode} onFocusChange={handleFocusChange} />
+        {/* ===== Dashboard Grid with Cinematic Container ===== */}
+        <div className="page-flip-container mt-6">
+          <div className={`page-surface ${animState === 'lifting' ? 'lifting' : ''} ${animState === 'flipping' ? 'flipping' : ''}`}>
+            {/* Dark "Back" of the page visible during flip */}
+            <div className="page-back">
+              <div className="text-amber-800/40 font-display italic text-2xl rotate-[3deg] select-none">
+                Turning towards tomorrow...
+              </div>
+            </div>
+
+            {/* Current Dashboard content */}
+            <div key={`current-${resetRevision}`}>
+              <DashboardGrid
+                isFocusMode={isFocusMode}
+                onFocusChange={handleFocusChange}
+                animState={animState}
+              />
+            </div>
+          </div>
+
+          {/* Reveal Layer Underneath */}
+          <div className={`page-underneath ${animState === 'revealing' || animState === 'complete' ? 'active' : ''}`}>
+            <div className="shimmer-sweep active" />
+          </div>
+        </div>
 
         <footer className="mt-16 text-center pb-8">
           <p className="text-white/10 text-xs font-medium tracking-wide">
@@ -321,6 +447,13 @@ export default function App() {
           </p>
         </footer>
       </div>
+
+      {/* Start New Day Modal */}
+      <StartNewDayModal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        onConfirm={handleStartNewDay}
+      />
 
       {/* Priority Check-In Modal */}
       <PriorityCheckInModal
