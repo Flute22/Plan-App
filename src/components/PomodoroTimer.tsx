@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Play, Pause, RotateCcw, Timer, ChevronDown, Brain, Coffee, Dumbbell, BookOpen } from 'lucide-react';
 import { usePersistedState } from '../hooks/usePersistedState';
-import CircularProgress from './CircularProgress';
-import { useCircleSize } from '../hooks/useCircleSize';
 
 // Timer presets
 const PRESETS = [
@@ -113,8 +111,9 @@ export default function PomodoroTimer({ onFocusChange }: Props) {
     return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   };
 
-  const circleSize = useCircleSize();
   const totalDuration = mode === 'work' ? preset.work : preset.break;
+  const progress = totalDuration > 0 ? ((totalDuration - timeLeft) / totalDuration) * 100 : 0;
+  const circumference = 2 * Math.PI * 80;
   const isWork = mode === 'work';
 
   const accentMap: Record<string, { text: string; bg20: string; glow: string; gradW: [string, string] }> = {
@@ -128,49 +127,47 @@ export default function PomodoroTimer({ onFocusChange }: Props) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-      className="glass-card flex flex-col items-center relative overflow-visible">
+      className="glass-card p-6 flex flex-col items-center relative overflow-hidden">
       <div className={`absolute -top-16 -left-16 w-40 h-40 rounded-full blur-3xl transition-colors duration-1000 ${isWork ? `bg-${preset.accent}-500/10` : 'bg-teal-500/10'}`} />
 
-      <div className="widget-card-inner relative z-10 w-full">
+      <div className="relative z-10 flex flex-col items-center w-full">
         {/* Header with preset selector */}
-        <div className="widget-card-header" ref={presetRef}>
-          <div className="flex items-center gap-2">
-            <div className={`p-2 rounded-xl transition-colors duration-300 bg-gradient-to-br ${isWork ? a.bg20 : 'from-teal-500/20 to-emerald-500/20'}`}>
-              <span className={isWork ? a.text : 'text-teal-400'}>{ICONS[preset.icon]}</span>
-            </div>
+        <div className="flex items-center gap-2 mb-5 self-start w-full" ref={presetRef}>
+          <div className={`p-2 rounded-xl transition-colors duration-300 bg-gradient-to-br ${isWork ? a.bg20 : 'from-teal-500/20 to-emerald-500/20'}`}>
+            <span className={isWork ? a.text : 'text-teal-400'}>{ICONS[preset.icon]}</span>
+          </div>
 
-            {/* Preset dropdown trigger */}
-            <div className="relative">
-              <button
-                onClick={() => !isActive && setShowPresets(!showPresets)}
-                className={`flex items-center gap-1.5 font-heading text-lg font-bold text-white/90 ${isActive ? 'cursor-default' : 'hover:text-white'}`}
-              >
-                {preset.label}
-                {!isActive && <ChevronDown size={14} className={`text-white/30 transition-transform ${showPresets ? 'rotate-180' : ''}`} />}
-              </button>
+          {/* Preset dropdown trigger */}
+          <div className="relative flex-1">
+            <button
+              onClick={() => !isActive && setShowPresets(!showPresets)}
+              className={`flex items-center gap-1.5 font-heading text-lg font-bold text-white/90 ${isActive ? 'cursor-default' : 'hover:text-white'}`}
+            >
+              {preset.label}
+              {!isActive && <ChevronDown size={14} className={`text-white/30 transition-transform ${showPresets ? 'rotate-180' : ''}`} />}
+            </button>
 
-              <AnimatePresence>
-                {showPresets && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -4, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute top-full mt-2 left-0 w-48 rounded-xl overflow-hidden z-30"
-                    style={{ background: 'rgba(20,15,35,0.96)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}
-                  >
-                    {PRESETS.map((p, i) => (
-                      <button key={p.key} onClick={() => selectPreset(i)}
-                        className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-sm transition-all hover:bg-white/8 ${i === presetIndex ? 'bg-white/5' : ''}`}>
-                        <span className={`${accentMap[p.accent].text}`}>{ICONS[p.icon]}</span>
-                        <span className="font-medium text-white/70">{p.label}</span>
-                        <span className="ml-auto text-[10px] text-white/20">{Math.floor(p.work / 60)}m</span>
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <AnimatePresence>
+              {showPresets && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-full mt-2 left-0 w-48 rounded-xl overflow-hidden z-30"
+                  style={{ background: 'rgba(20,15,35,0.96)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}
+                >
+                  {PRESETS.map((p, i) => (
+                    <button key={p.key} onClick={() => selectPreset(i)}
+                      className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-sm transition-all hover:bg-white/8 ${i === presetIndex ? 'bg-white/5' : ''}`}>
+                      <span className={`${accentMap[p.accent].text}`}>{ICONS[p.icon]}</span>
+                      <span className="font-medium text-white/70">{p.label}</span>
+                      <span className="ml-auto text-[10px] text-white/20">{Math.floor(p.work / 60)}m</span>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <span className="text-[10px] text-white/20 font-medium">
@@ -179,21 +176,53 @@ export default function PomodoroTimer({ onFocusChange }: Props) {
         </div>
 
         {/* Timer ring */}
-        <div className="widget-circle-container">
-          <CircularProgress
-            size={circleSize}
-            value={totalDuration - timeLeft}
-            max={totalDuration}
-            color={isWork ? a.gradW[0] : '#2dd4bf'}
-            trackColor="rgba(255,255,255,0.05)"
-            label={formatTime(timeLeft)}
-            sublabel={mode === 'break' ? 'BREAK' : preset.label.toUpperCase()}
-            strokeWidth={circleSize < 110 ? 6 : 8}
-          />
+        <div className="relative w-44 h-44 flex items-center justify-center mb-6">
+          {isActive && (
+            <motion.div
+              animate={{ scale: [1, 1.08, 1], opacity: [0.15, 0.3, 0.15] }}
+              transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+              className={`absolute inset-[-12px] rounded-full border-2 ${isWork ? `border-${preset.accent}-500/30` : 'border-teal-500/30'}`}
+              style={{ filter: 'blur(4px)' }}
+            />
+          )}
+          {isActive && (
+            <motion.div
+              animate={{ scale: [1, 1.15, 1], opacity: [0.08, 0.18, 0.08] }}
+              transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut', delay: 0.5 }}
+              className={`absolute inset-[-24px] rounded-full border ${isWork ? `border-${preset.accent}-500/15` : 'border-teal-500/15'}`}
+              style={{ filter: 'blur(8px)' }}
+            />
+          )}
+
+          <svg className="w-full h-full transform -rotate-90">
+            <circle cx="88" cy="88" r="80" fill="transparent" stroke="rgba(255,255,255,0.04)" strokeWidth="10" />
+            <motion.circle cx="88" cy="88" r="80" fill="transparent"
+              stroke={`url(#timerGrad${isWork ? 'W' : 'B'})`}
+              strokeWidth="10" strokeLinecap="round" strokeDasharray={circumference}
+              animate={{ strokeDashoffset: circumference * (1 - progress / 100) }}
+              transition={{ duration: 1, ease: "linear" }}
+              style={{ filter: `drop-shadow(0 0 10px ${isWork ? a.glow : 'rgba(45,212,191,0.4)'})` }} />
+            <defs>
+              <linearGradient id="timerGradW" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor={a.gradW[0]} />
+                <stop offset="100%" stopColor={a.gradW[1]} />
+              </linearGradient>
+              <linearGradient id="timerGradB" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#2dd4bf" />
+                <stop offset="100%" stopColor="#34d399" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div className="absolute flex flex-col items-center">
+            <span className="text-4xl font-bold text-white/90 font-mono tracking-wider">{formatTime(timeLeft)}</span>
+            <span className={`text-xs font-bold uppercase tracking-[0.2em] mt-1.5 ${isWork ? a.text + '/60' : 'text-teal-400/60'}`}>
+              {mode === 'break' ? 'break' : preset.label}
+            </span>
+          </div>
         </div>
 
         {/* Controls */}
-        <div className="widget-controls">
+        <div className="flex gap-4 mb-5">
           <motion.button onClick={toggleTimer} whileTap={{ scale: 0.9 }}
             className={`p-4 rounded-2xl transition-all shadow-lg text-white ${isActive
               ? 'bg-gradient-to-r from-amber-500 to-yellow-500'
@@ -208,17 +237,15 @@ export default function PomodoroTimer({ onFocusChange }: Props) {
           </motion.button>
         </div>
 
-        {/* Sessions indicator */}
-        <div className="flex flex-col items-center">
-          <div className="flex gap-2">
-            {[...Array(4)].map((_, i) => (
-              <motion.div key={i} animate={{ scale: i < sessions ? [1, 1.3, 1] : 1 }}
-                className={`w-3 h-3 rounded-full transition-all ${i < sessions ? `bg-gradient-to-br ${preset.workColor} shadow-sm` : 'bg-white/8 border border-white/10'}`}
-                style={i < sessions ? { boxShadow: `0 0 8px ${a.glow.replace('0.4', '0.3')}` } : {}} />
-            ))}
-          </div>
-          <p className="widget-status mt-2">Sessions completed</p>
+        {/* Sessions */}
+        <div className="flex gap-2">
+          {[...Array(4)].map((_, i) => (
+            <motion.div key={i} animate={{ scale: i < sessions ? [1, 1.3, 1] : 1 }}
+              className={`w-3 h-3 rounded-full transition-all ${i < sessions ? `bg-gradient-to-br ${preset.workColor} shadow-sm` : 'bg-white/8 border border-white/10'}`}
+              style={i < sessions ? { boxShadow: `0 0 8px ${a.glow.replace('0.4', '0.3')}` } : {}} />
+          ))}
         </div>
+        <p className="text-[10px] text-white/20 mt-2 font-medium">Sessions completed</p>
       </div>
     </motion.div>
   );
