@@ -14,7 +14,7 @@ interface Todo {
   priority: Priority;
 }
 
-const DEFAULT_SLOTS = 7;
+const DEFAULT_SLOTS = 5;
 
 const PRIORITY_CONFIG = {
   high: { label: 'High', textColor: 'text-rose-300', bg: 'bg-rose-500/15', border: 'border-rose-500/20', borderL: 'border-l-rose-500', dotColor: 'bg-rose-500', icon: <AlertCircle size={12} /> },
@@ -218,7 +218,7 @@ export default function TodoList() {
         </AnimatePresence>
 
         {/* Task Slots */}
-        <div className="space-y-1.5 overflow-y-auto max-h-[280px] pr-1 custom-scrollbar flex-1">
+        <div className="space-y-4 overflow-y-auto max-h-[320px] pr-1 custom-scrollbar flex-1">
           <AnimatePresence initial={false} mode='popLayout'>
             {sortedTodos.map((todo, index) => {
               const cfg = PRIORITY_CONFIG[todo.priority];
@@ -297,7 +297,7 @@ export default function TodoList() {
 
         {/* + Add Task button */}
         <button onClick={addSlot}
-          className="mt-13 flex items-center justify-center gap-1.5 text-xs font-medium text-white/25 hover:text-amber-400/60 transition-colors py-2.5 rounded-xl hover:bg-white/5 w-full border border-dashed border-white/8 hover:border-amber-500/20">
+          className="mt-4 flex items-center justify-center gap-1.5 text-xs font-medium text-white/25 hover:text-amber-400/60 transition-colors py-2.5 rounded-xl hover:bg-white/5 w-full border border-dashed border-white/8 hover:border-amber-500/20">
           <Plus size={14} />
           Add Task
         </button>

@@ -2,19 +2,9 @@ import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Calendar, Sun, CloudMoon, Sunset, Moon, LogOut, User } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext';
-import DailyPriorities from './components/DailyPriorities';
-import TodoList from './components/TodoList';
-import DailyAffirmation from './components/DailyAffirmation';
-import WaterTracker from './components/WaterTracker';
-import NotesSection from './components/NotesSection';
-import PomodoroTimer from './components/PomodoroTimer';
-import MusicPlayer from './components/MusicPlayer';
-import SleepTracker from './components/SleepTracker';
-import GratitudeJournal from './components/GratitudeJournal';
-import MealTracker from './components/MealTracker';
-import ActivityChart from './components/ActivityChart';
 import Logo from './components/Logo';
 import DayManager from './components/DayManager';
+import DashboardGrid from './components/DashboardGrid';
 import LoginPage from './components/auth/LoginPage';
 import SignUpPage from './components/auth/SignUpPage';
 import ForgotPasswordPage from './components/auth/ForgotPasswordPage';
@@ -318,48 +308,7 @@ export default function App() {
         )}
 
         {/* ===== Dashboard Grid ===== */}
-        <div className={isFocusMode
-          ? 'flex flex-col items-center gap-6 max-w-3xl mx-auto'
-          : 'grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6'
-        }>
-
-          {/* Left Column — hidden in focus mode */}
-          <div className={`lg:col-span-5 space-y-5 lg:space-y-6 transition-all duration-500 ${isFocusMode ? 'hidden' : ''}`}>
-            <DailyPriorities />
-            <ActivityChart />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-5 lg:gap-6">
-              <DailyAffirmation />
-              {!isFocusMode && <NotesSection />}
-            </div>
-          </div>
-
-          {/* Center Column — hidden in focus mode */}
-          <div className={`lg:col-span-4 space-y-5 lg:space-y-6 transition-all duration-500 ${isFocusMode ? 'hidden' : ''}`}>
-            <TodoList />
-            <GratitudeJournal />
-            <MealTracker />
-          </div>
-
-          {/* Right Column / Focus: Timer only */}
-          <div className={isFocusMode ? 'w-full max-w-sm mx-auto' : 'lg:col-span-3 space-y-5 lg:space-y-6'}>
-            <PomodoroTimer onFocusChange={handleFocusChange} />
-            {!isFocusMode && (
-              <>
-                <WaterTracker />
-                <SleepTracker />
-                <MusicPlayer />
-              </>
-            )}
-          </div>
-
-          {/* Focus mode: Notes + Music side-by-side */}
-          {isFocusMode && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-              <NotesSection />
-              <MusicPlayer />
-            </div>
-          )}
-        </div>
+        <DashboardGrid isFocusMode={isFocusMode} onFocusChange={handleFocusChange} />
 
         <footer className="mt-16 text-center pb-8">
           <p className="text-white/10 text-xs font-medium tracking-wide">
