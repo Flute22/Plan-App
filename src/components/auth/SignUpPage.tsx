@@ -1,7 +1,8 @@
 import { useState, useCallback, useMemo, type FormEvent } from 'react';
 import { motion } from 'motion/react';
-import { UserPlus, Mail, Lock, Eye, EyeOff, User, CheckCircle2, AlertCircle, ArrowRight, Sparkles } from 'lucide-react';
+import { UserPlus, Mail, Lock, Eye, EyeOff, User, CheckCircle2, AlertCircle, ArrowRight, Sparkles, Info } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { isSupabaseConfigured } from '../../lib/supabase';
 import Logo from '../Logo';
 
 // ─── Password strength ──────────────────────────────────────────────────────
@@ -110,15 +111,27 @@ export default function SignUpPage({ onNavigate }: { onNavigate: (page: string) 
                     <p className="text-white/40 text-sm">Start your productivity journey with flow-Day</p>
                 </div>
 
-                {/* Error */}
-                {error && (
+                {/* Error/Notice */}
+                {(!isSupabaseConfigured() || error) && (
                     <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="auth-error"
+                        className={!isSupabaseConfigured() ? "auth-info" : "auth-error"}
                     >
-                        <AlertCircle size={16} />
-                        <span>{error}</span>
+                        {!isSupabaseConfigured() ? (
+                            <>
+                                <Info size={16} className="text-sky-400" />
+                                <div className="text-left">
+                                    <p className="font-bold text-[11px] uppercase tracking-wider text-sky-400">Offline Mode</p>
+                                    <p className="text-[10px] text-white/50">Your account will be stored locally on this device.</p>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <AlertCircle size={16} />
+                                <span>{error}</span>
+                            </>
+                        )}
                     </motion.div>
                 )}
 
@@ -195,7 +208,7 @@ export default function SignUpPage({ onNavigate }: { onNavigate: (page: string) 
                                     />
                                 </div>
                                 <p className={`text-xs mt-1 ml-1 ${passwordStrength.level === 'weak' ? 'text-red-400' :
-                                        passwordStrength.level === 'medium' ? 'text-amber-400' : 'text-emerald-400'
+                                    passwordStrength.level === 'medium' ? 'text-amber-400' : 'text-emerald-400'
                                     }`}>
                                     {passwordStrength.label} password
                                 </p>

@@ -45,7 +45,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Restore session on mount & listen for auth changes
   useEffect(() => {
     if (!supabase) {
-      setState(prev => ({ ...prev, loading: false }));
+      // Local fallback logic
+      const localSession = localStorage.getItem('flowday_local_session');
+      if (localSession) {
+        try {
+          const { user, session } = JSON.parse(localSession);
+          setState({
+            user,
+            session,
+            loading: false,
+            isAdmin: user.user_metadata?.role === 'admin',
+            userRole: user.user_metadata?.role === 'admin' ? 'admin' : 'user',
+          });
+        } catch {
+          setState(prev => ({ ...prev, loading: false }));
+        }
+      } else {
+        setState(prev => ({ ...prev, loading: false }));
+      }
       return;
     }
 
@@ -82,7 +99,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Sign Up (regular users only — admin is seeded) ───────────────────
   const signUp = useCallback(async (email: string, password: string, fullName: string) => {
-    if (!supabase) return { error: { message: 'Supabase is not configured' } as AuthError };
+    if (!supabase) {
+      // Create a mock local user
+      const mockUser = {
+        id: 'local-' + Math.random().toString(36).substr(2, 9),
+        email,
+        user_metadata: { full_name: fullName, role: 'user' },
+        app_metadata: {},
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+      } as User;
+
+      const mockSession = {
+        access_token: 'local-token',
+        token_type: 'bearer',
+        expires_in: 3600,
+        refresh_token: 'local-refresh',
+        user: mockUser,
+      } as Session;
+
+      localStorage.setItem('flowday_local_session', JSON.stringify({ user: mockUser, session: mockSession }));
+      setState({
+        user: mockUser,
+        session: mockSession,
+        loading: false,
+        isAdmin: false,
+        userRole: 'user',
+      });
+      return { error: null };
+    }
 
     const { error } = await supabase.auth.signUp({
       email,
@@ -97,7 +142,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Sign In ──────────────────────────────────────────────────────────────
   const signIn = useCallback(async (email: string, password: string) => {
-    if (!supabase) return { error: { message: 'Supabase is not configured' } as AuthError };
+    if (!supabase) {
+      // Local sign in fallback - for demo purposes, any login works or check local profile
+      const localSession = localStorage.getItem('flowday_local_session');
+      if (localSession) {
+        const { user, session } = JSON.parse(localSession);
+        if (user.email === email) {
+          setState({ user, session, loading: false, isAdmin: user.user_metadata?.role === 'admin', userRole: user.user_metadata?.role === 'admin' ? 'admin' : 'user' });
+          return { error: null };
+        }
+      }
+
+      // If no local user exists or email mismatch, create one (seamless experience for demo)
+      return signUp(email, password, 'Local User');
+    }
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -109,13 +167,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Sign Out ─────────────────────────────────────────────────────────────
   const signOut = useCallback(async () => {
-    if (!supabase) return;
+    if (!supabase) {
+      localStorage.removeItem('flowday_local_session');
+      setState({
+        user: null,
+        session: null,
+        loading: false,
+        isAdmin: false,
+        userRole: null,
+      });
+      return;
+    }
     await supabase.auth.signOut();
   }, []);
 
   // ── Reset Password (sends email) ────────────────────────────────────────
   const resetPassword = useCallback(async (email: string) => {
-    if (!supabase) return { error: { message: 'Supabase is not configured' } as AuthError };
+    if (!supabase) return { error: null }; // Silent success for local mode
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/#/reset-password`,
@@ -126,7 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Update Password (after reset) ───────────────────────────────────────
   const updatePassword = useCallback(async (newPassword: string) => {
-    if (!supabase) return { error: { message: 'Supabase is not configured' } as AuthError };
+    if (!supabase) return { error: null }; // Silent success for local mode
 
     const { error } = await supabase.auth.updateUser({ password: newPassword });
 

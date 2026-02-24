@@ -11,6 +11,10 @@ export default function ActivityChart() {
 
     useEffect(() => {
         const fetchHistory = async () => {
+            if (!supabase) {
+                setLoading(false);
+                return;
+            }
             try {
                 // Fetch last 7 entries for this user
                 const { data, error } = await supabase

@@ -19,6 +19,15 @@ export default function DayManager() {
                 console.log(`[DayManager] Day changed detected: ${activeDay} -> ${todayString}`);
 
                 try {
+                    if (!supabase) {
+                        // Silent fallback - just update the UI state
+                        updateGlobalDay(todayString);
+                        setLastCheck(todayString);
+                        setShowNotification(true);
+                        setTimeout(() => setShowNotification(false), 8000);
+                        return;
+                    }
+
                     // 1. Calculate and save score for the day that just ended
                     const { data: score, error } = await supabase.rpc('calculate_daily_score', {
                         target_date: activeDay

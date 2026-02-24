@@ -1,7 +1,8 @@
 import { useState, useCallback, type FormEvent } from 'react';
 import { motion } from 'motion/react';
-import { LogIn, Mail, Lock, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
+import { LogIn, Mail, Lock, Eye, EyeOff, AlertCircle, ArrowRight, Sparkles } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { isSupabaseConfigured } from '../../lib/supabase';
 import Logo from '../Logo';
 
 export default function LoginPage({ onNavigate }: { onNavigate: (page: string) => void }) {
@@ -53,15 +54,27 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                     <p className="text-white/40 text-sm">Sign in to continue your productivity journey</p>
                 </div>
 
-                {/* Error */}
-                {error && (
+                {/* Error/Notice */}
+                {(!isSupabaseConfigured() || error) && (
                     <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="auth-error"
+                        className={!isSupabaseConfigured() ? "auth-info" : "auth-error"}
                     >
-                        <AlertCircle size={16} />
-                        <span>{error}</span>
+                        {!isSupabaseConfigured() ? (
+                            <>
+                                <Sparkles size={16} className="text-amber-400" />
+                                <div className="text-left">
+                                    <p className="font-bold text-[11px] uppercase tracking-wider text-amber-400">Offline Mode</p>
+                                    <p className="text-[10px] text-white/50">Using local storage. Cloud sync disabled.</p>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <AlertCircle size={16} />
+                                <span>{error}</span>
+                            </>
+                        )}
                     </motion.div>
                 )}
 
@@ -106,8 +119,8 @@ export default function LoginPage({ onNavigate }: { onNavigate: (page: string) =
                         <label className="flex items-center gap-2 cursor-pointer group">
                             <div
                                 className={`w-4 h-4 rounded border transition-all flex items-center justify-center ${rememberMe
-                                        ? 'bg-amber-500/80 border-amber-500/80'
-                                        : 'border-white/20 bg-white/5 group-hover:border-white/30'
+                                    ? 'bg-amber-500/80 border-amber-500/80'
+                                    : 'border-white/20 bg-white/5 group-hover:border-white/30'
                                     }`}
                                 onClick={() => setRememberMe(r => !r)}
                             >
