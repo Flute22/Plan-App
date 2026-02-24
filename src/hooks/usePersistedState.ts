@@ -121,7 +121,9 @@ export function usePersistedState<T>(
             if (debounceRef.current) clearTimeout(debounceRef.current);
             debounceRef.current = setTimeout(async () => {
                 try {
-                    await supabase!
+                    if (!supabase || !userId) return;
+
+                    await supabase
                         .from('app_state')
                         .upsert({
                             key: storageKey,
@@ -129,7 +131,9 @@ export function usePersistedState<T>(
                             user_id: userId,
                             updated_at: new Date().toISOString(),
                         }, { onConflict: 'key' });
-                } catch { /* ignore */ }
+                } catch (err) {
+                    console.error(`Cloud sync failed for ${storageKey}:`, err);
+                }
             }, debounceMs);
         }
 

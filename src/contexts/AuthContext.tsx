@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Restore session on mount & listen for auth changes
   useEffect(() => {
     if (!supabase) {
-      // Local fallback logic
+      // Local fallback logic ... (rest of the logic is already there)
       const localSession = localStorage.getItem('flowday_local_session');
       if (localSession) {
         try {
@@ -67,21 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Get current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const user = session?.user ?? null;
-      const role = getUserRole(user);
-      setState({
-        user,
-        session,
-        loading: false,
-        isAdmin: role === 'admin',
-        userRole: role,
-      });
-    });
-
-    // Listen for auth state changes (login, logout, token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+    try {
+      supabase.auth.getSession().then(({ data: { session } }) => {
         const user = session?.user ?? null;
         const role = getUserRole(user);
         setState({
@@ -91,10 +78,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isAdmin: role === 'admin',
           userRole: role,
         });
-      }
-    );
+      });
 
-    return () => subscription.unsubscribe();
+      // Listen for auth state changes (login, logout, token refresh)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (_event, session) => {
+          const user = session?.user ?? null;
+          const role = getUserRole(user);
+          setState({
+            user,
+            session,
+            loading: false,
+            isAdmin: role === 'admin',
+            userRole: role,
+          });
+        }
+      );
+
+      return () => {
+        if (subscription) subscription.unsubscribe();
+      };
+    } catch (err) {
+      console.error('Supabase auth initialization failed:', err);
+      setState(prev => ({ ...prev, loading: false }));
+    }
   }, []);
 
   // ── Sign Up (regular users only — admin is seeded) ───────────────────

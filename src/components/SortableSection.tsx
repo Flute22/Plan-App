@@ -6,6 +6,7 @@ import { GripVertical } from 'lucide-react';
 interface SortableSectionProps {
     id: string;
     children: React.ReactNode;
+    key?: React.Key;
 }
 
 export function SortableSection({ id, children }: SortableSectionProps) {

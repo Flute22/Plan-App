@@ -8,6 +8,15 @@ let supabase: SupabaseClient | null = null;
 
 if (supabaseUrl && supabaseAnonKey) {
     supabase = createClient(supabaseUrl, supabaseAnonKey);
+} else {
+    const missing = [];
+    if (!supabaseUrl) missing.push('VITE_SUPABASE_URL');
+    if (!supabaseAnonKey) missing.push('VITE_SUPABASE_ANON_KEY');
+
+    if (missing.length > 0) {
+        console.warn(`Supabase is not configured. Missing environment variables: ${missing.join(', ')}`);
+        console.warn('The application will run in "Offline Mode" using local storage.');
+    }
 }
 
 export { supabase };

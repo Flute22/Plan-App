@@ -47,13 +47,17 @@ export interface DataEntry {
 export async function fetchAdminStats(): Promise<AdminStats | null> {
     if (!supabase) return null;
 
-    const { data, error } = await supabase.rpc('admin_get_stats');
-    if (error) {
-        console.error('Failed to fetch admin stats:', error.message);
+    try {
+        const { data, error } = await supabase.rpc('admin_get_stats');
+        if (error) {
+            console.error('Failed to fetch admin stats:', error.message);
+            return null;
+        }
+        return data as AdminStats;
+    } catch (err) {
+        console.error('Exception in fetchAdminStats:', err);
         return null;
     }
-
-    return data as AdminStats;
 }
 
 // ─── Users ───────────────────────────────────────────────────────────────────
@@ -66,55 +70,65 @@ export async function fetchAllUsers(options?: {
 }): Promise<{ users: UserProfile[]; total: number }> {
     if (!supabase) return { users: [], total: 0 };
 
-    const { search = '', status = '', page = 1, perPage = 10 } = options ?? {};
-    const from = (page - 1) * perPage;
-    const to = from + perPage - 1;
+    try {
+        const { search = '', status = '', page = 1, perPage = 10 } = options ?? {};
+        const from = (page - 1) * perPage;
+        const to = from + perPage - 1;
 
-    let query = supabase
-        .from('profiles')
-        .select('*', { count: 'exact' })
-        .eq('role', 'user')
-        .order('created_at', { ascending: false })
-        .range(from, to);
+        let query = supabase
+            .from('profiles')
+            .select('*', { count: 'exact' })
+            .eq('role', 'user')
+            .order('created_at', { ascending: false })
+            .range(from, to);
 
-    if (status && status !== 'all') {
-        query = query.eq('status', status);
-    }
+        if (status && status !== 'all') {
+            query = query.eq('status', status);
+        }
 
-    if (search) {
-        query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
-    }
+        if (search) {
+            query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
+        }
 
-    const { data, count, error } = await query;
-    if (error) {
-        console.error('Failed to fetch users:', error.message);
+        const { data, count, error } = await query;
+        if (error) {
+            console.error('Failed to fetch users:', error.message);
+            return { users: [], total: 0 };
+        }
+
+        return { users: (data ?? []) as UserProfile[], total: count ?? 0 };
+    } catch (err) {
+        console.error('Exception in fetchAllUsers:', err);
         return { users: [], total: 0 };
     }
-
-    return { users: (data ?? []) as UserProfile[], total: count ?? 0 };
 }
 
 export async function updateUserStatus(userId: string, status: 'active' | 'blocked' | 'deleted'): Promise<boolean> {
     if (!supabase) return false;
 
-    const { error } = await supabase
-        .from('profiles')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', userId);
+    try {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ status, updated_at: new Date().toISOString() })
+            .eq('id', userId);
 
-    if (error) {
-        console.error('Failed to update user status:', error.message);
+        if (error) {
+            console.error('Failed to update user status:', error.message);
+            return false;
+        }
+
+        // Log the action
+        await supabase.from('activity_log').insert({
+            user_id: userId,
+            action: status === 'blocked' ? 'user_blocked' : status === 'deleted' ? 'user_deleted' : 'user_unblocked',
+            details: { target_user: userId },
+        });
+
+        return true;
+    } catch (err) {
+        console.error('Exception in updateUserStatus:', err);
         return false;
     }
-
-    // Log the action
-    await supabase.from('activity_log').insert({
-        user_id: userId,
-        action: status === 'blocked' ? 'user_blocked' : status === 'deleted' ? 'user_deleted' : 'user_unblocked',
-        details: { target_user: userId },
-    });
-
-    return true;
 }
 
 // ─── Activity Log ────────────────────────────────────────────────────────────
@@ -122,18 +136,23 @@ export async function updateUserStatus(userId: string, status: 'active' | 'block
 export async function fetchActivityLog(limit = 20): Promise<ActivityEntry[]> {
     if (!supabase) return [];
 
-    const { data, error } = await supabase
-        .from('activity_log')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit);
+    try {
+        const { data, error } = await supabase
+            .from('activity_log')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(limit);
 
-    if (error) {
-        console.error('Failed to fetch activity log:', error.message);
+        if (error) {
+            console.error('Failed to fetch activity log:', error.message);
+            return [];
+        }
+
+        return (data ?? []) as ActivityEntry[];
+    } catch (err) {
+        console.error('Exception in fetchActivityLog:', err);
         return [];
     }
-
-    return (data ?? []) as ActivityEntry[];
 }
 
 // ─── Data Management ─────────────────────────────────────────────────────────
@@ -146,42 +165,52 @@ export async function fetchAllData(options?: {
 }): Promise<{ entries: DataEntry[]; total: number }> {
     if (!supabase) return { entries: [], total: 0 };
 
-    const { userId, search = '', page = 1, perPage = 20 } = options ?? {};
-    const from = (page - 1) * perPage;
-    const to = from + perPage - 1;
+    try {
+        const { userId, search = '', page = 1, perPage = 20 } = options ?? {};
+        const from = (page - 1) * perPage;
+        const to = from + perPage - 1;
 
-    let query = supabase
-        .from('app_state')
-        .select('*', { count: 'exact' })
-        .order('updated_at', { ascending: false })
-        .range(from, to);
+        let query = supabase
+            .from('app_state')
+            .select('*', { count: 'exact' })
+            .order('updated_at', { ascending: false })
+            .range(from, to);
 
-    if (userId) {
-        query = query.eq('user_id', userId);
-    }
+        if (userId) {
+            query = query.eq('user_id', userId);
+        }
 
-    if (search) {
-        query = query.ilike('key', `%${search}%`);
-    }
+        if (search) {
+            query = query.ilike('key', `%${search}%`);
+        }
 
-    const { data, count, error } = await query;
-    if (error) {
-        console.error('Failed to fetch data:', error.message);
+        const { data, count, error } = await query;
+        if (error) {
+            console.error('Failed to fetch data:', error.message);
+            return { entries: [], total: 0 };
+        }
+
+        return { entries: (data ?? []) as DataEntry[], total: count ?? 0 };
+    } catch (err) {
+        console.error('Exception in fetchAllData:', err);
         return { entries: [], total: 0 };
     }
-
-    return { entries: (data ?? []) as DataEntry[], total: count ?? 0 };
 }
 
 export async function deleteDataEntry(key: string): Promise<boolean> {
     if (!supabase) return false;
 
-    const { error } = await supabase.from('app_state').delete().eq('key', key);
-    if (error) {
-        console.error('Failed to delete data entry:', error.message);
+    try {
+        const { error } = await supabase.from('app_state').delete().eq('key', key);
+        if (error) {
+            console.error('Failed to delete data entry:', error.message);
+            return false;
+        }
+        return true;
+    } catch (err) {
+        console.error('Exception in deleteDataEntry:', err);
         return false;
     }
-    return true;
 }
 
 // ─── CSV Export ──────────────────────────────────────────────────────────────
