@@ -2,6 +2,45 @@ import { useState, useRef, type KeyboardEvent } from 'react';
 import { motion } from 'motion/react';
 import { Check, Lock, Unlock, Target, Circle } from 'lucide-react';
 import { usePersistedState } from '../hooks/usePersistedState';
+import { useAutoResize } from '../hooks/useAutoResize';
+
+interface PriorityInputProps {
+  index: number;
+  priority: string;
+  isLocked: boolean;
+  completed: boolean;
+  hasDigit: boolean;
+  inputRef: (el: HTMLTextAreaElement | null) => void;
+  onChange: (value: string) => void;
+  onKeyDown: (e: KeyboardEvent<HTMLTextAreaElement>) => void;
+}
+
+function PriorityInput({ index, priority, isLocked, completed, hasDigit, inputRef, onChange, onKeyDown }: PriorityInputProps) {
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+  useAutoResize(ref, priority);
+
+  return (
+    <textarea
+      ref={(el) => {
+        ref.current = el;
+        inputRef(el);
+      }}
+      rows={1}
+      value={priority}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={onKeyDown}
+      disabled={isLocked}
+      placeholder={index === 0 ? 'Most important task...' : index === 1 ? 'Second priority...' : 'Also get to...'}
+      className={`w-full pl-14 pr-12 py-3.5 rounded-xl border transition-all outline-none text-sm resize-none overflow-hidden
+        ${completed
+          ? 'bg-white/3 border-white/5 text-white/25 line-through'
+          : isLocked
+            ? 'bg-white/5 border-white/5 text-white/60'
+            : `bg-white/5 border-white/10 placeholder-white/15 focus:border-amber-500/30 focus:ring-2 focus:ring-amber-500/10 focus:bg-white/8 ${hasDigit ? 'text-amber-400' : 'text-white/80'}`
+        }`}
+    />
+  );
+}
 
 export default function DailyPriorities() {
   const [priorities, setPriorities] = usePersistedState<string[]>('priorities', ['', '', '']);
@@ -14,7 +53,7 @@ export default function DailyPriorities() {
     newCompleted[index] = !newCompleted[index];
     setCompleted(newCompleted);
   };
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([null, null, null]);
+  const inputRefs = useRef<(HTMLTextAreaElement | null)[]>([null, null, null]);
 
   const handleChange = (index: number, value: string) => {
     if (isLocked) return;
@@ -23,7 +62,7 @@ export default function DailyPriorities() {
     setPriorities(newPriorities);
   };
 
-  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       const nextIndex = index + 1;
@@ -80,21 +119,15 @@ export default function DailyPriorities() {
                 }`}>
                 {index + 1}
               </div>
-              <input
-                ref={(el) => { inputRefs.current[index] = el; }}
-                type="text"
-                value={priority}
-                onChange={(e) => handleChange(index, e.target.value)}
+              <PriorityInput
+                index={index}
+                priority={priority}
+                isLocked={isLocked}
+                completed={completed[index]}
+                hasDigit={hasDigit(priority)}
+                inputRef={(el) => { inputRefs.current[index] = el; }}
+                onChange={(value) => handleChange(index, value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
-                disabled={isLocked}
-                placeholder={index === 0 ? 'Most important task...' : index === 1 ? 'Second priority...' : 'Also get to...'}
-                className={`w-full pl-14 pr-12 py-3.5 rounded-xl border transition-all outline-none text-sm
-                  ${completed[index]
-                    ? 'bg-white/3 border-white/5 text-white/25 line-through'
-                    : isLocked
-                      ? 'bg-white/5 border-white/5 text-white/60'
-                      : `bg-white/5 border-white/10 placeholder-white/15 focus:border-amber-500/30 focus:ring-2 focus:ring-amber-500/10 focus:bg-white/8 ${hasDigit(priority) ? 'text-amber-400' : 'text-white/80'}`
-                  }`}
               />
               {priority.trim() && (
                 <button

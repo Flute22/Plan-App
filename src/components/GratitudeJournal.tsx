@@ -1,6 +1,31 @@
+import { useRef } from 'react';
 import { motion } from 'motion/react';
 import { Heart, Sparkle } from 'lucide-react';
 import { usePersistedState } from '../hooks/usePersistedState';
+import { useAutoResize } from '../hooks/useAutoResize';
+
+interface GratitudeInputProps {
+    index: number;
+    value: string;
+    color: any;
+    onChange: (val: string) => void;
+}
+
+function GratitudeInput({ index, value, color, onChange }: GratitudeInputProps) {
+    const ref = useRef<HTMLTextAreaElement | null>(null);
+    useAutoResize(ref, value);
+
+    return (
+        <textarea
+            ref={ref}
+            rows={1}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={index === 0 ? 'Something that made me smile...' : index === 1 ? 'Someone I appreciate...' : 'A moment I treasure...'}
+            className={`w-full bg-white/5 border ${color.border} rounded-xl px-4 py-2.5 text-sm text-white/80 placeholder-white/20 outline-none focus:ring-2 ${color.ring} transition-all resize-none overflow-hidden`}
+        />
+    );
+}
 
 export default function GratitudeJournal() {
     const [entries, setEntries] = usePersistedState<string[]>('gratitude', ['', '', '']);
@@ -33,9 +58,12 @@ export default function GratitudeJournal() {
                             <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${colors[index].gradient} flex items-center justify-center flex-shrink-0`}>
                                 <Heart size={12} className="text-white" fill="white" />
                             </div>
-                            <input type="text" value={entry} onChange={(e) => handleChange(index, e.target.value)}
-                                placeholder={index === 0 ? 'Something that made me smile...' : index === 1 ? 'Someone I appreciate...' : 'A moment I treasure...'}
-                                className={`w-full bg-white/5 border ${colors[index].border} rounded-xl px-4 py-2.5 text-sm text-white/80 placeholder-white/20 outline-none focus:ring-2 ${colors[index].ring} transition-all`} />
+                            <GratitudeInput
+                                index={index}
+                                value={entry}
+                                color={colors[index]}
+                                onChange={(val) => handleChange(index, val)}
+                            />
                         </div>
                     ))}
                 </div>

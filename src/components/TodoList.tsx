@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Trash2, CheckCircle2, Circle, AlertCircle, ArrowUp, ArrowDown, ArrowUpDown, ListTodo, ChevronDown } from 'lucide-react';
 import { usePersistedState } from '../hooks/usePersistedState';
+import { useAutoResize } from '../hooks/useAutoResize';
 
 type Priority = 'low' | 'medium' | 'high';
 type SortOrder = 'asc' | 'desc' | 'none';
@@ -30,6 +31,38 @@ function createDefaultTodos(): Todo[] {
   }));
 }
 
+interface TodoInputProps {
+  index: number;
+  todo: Todo;
+  cfg: any;
+  isFilled: boolean;
+  inputRef: (el: HTMLTextAreaElement | null) => void;
+  onChange: (text: string) => void;
+  onKeyDown: (e: KeyboardEvent<HTMLTextAreaElement>) => void;
+}
+
+function TodoInput({ index, todo, cfg, isFilled, inputRef, onChange, onKeyDown }: TodoInputProps) {
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+  useAutoResize(ref, todo.text);
+
+  return (
+    <textarea
+      ref={(el) => {
+        ref.current = el;
+        inputRef(el);
+      }}
+      rows={1}
+      value={todo.text}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={onKeyDown}
+      disabled={todo.completed}
+      placeholder={`Task ${index + 1}...`}
+      className={`flex-1 bg-transparent border-none outline-none text-sm min-w-0 placeholder-white/10 resize-none overflow-hidden py-0 ${todo.completed ? 'text-white/20 line-through' : isFilled ? cfg.textColor : 'text-white/50'
+        }`}
+    />
+  );
+}
+
 export default function TodoList() {
   const [todos, setTodos] = usePersistedState<Todo[]>('todos', createDefaultTodos());
   const [slotCount, setSlotCount] = useState(todos.length || DEFAULT_SLOTS);
@@ -37,7 +70,7 @@ export default function TodoList() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('none');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const inputRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -101,7 +134,7 @@ export default function TodoList() {
   const totalFilled = filledTodos.length;
   const progressPercent = totalFilled > 0 ? (completedCount / totalFilled) * 100 : 0;
 
-  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       const nextIndex = index + 1;
@@ -208,16 +241,14 @@ export default function TodoList() {
                   </button>
 
                   {/* Text input */}
-                  <input
-                    ref={(el) => { inputRefs.current[index] = el; }}
-                    type="text"
-                    value={todo.text}
-                    onChange={(e) => updateTodoText(todo.id, e.target.value)}
+                  <TodoInput
+                    index={index}
+                    todo={todo}
+                    cfg={cfg}
+                    isFilled={isFilled}
+                    inputRef={(el) => { inputRefs.current[index] = el; }}
+                    onChange={(text) => updateTodoText(todo.id, text)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
-                    disabled={todo.completed}
-                    placeholder={`Task ${index + 1}...`}
-                    className={`flex-1 bg-transparent border-none outline-none text-sm min-w-0 placeholder-white/10 ${todo.completed ? 'text-white/20 line-through' : isFilled ? cfg.textColor : 'text-white/50'
-                      }`}
                   />
 
                   {/* Priority dropdown per slot */}

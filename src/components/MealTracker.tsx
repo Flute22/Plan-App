@@ -1,6 +1,8 @@
+import { useRef } from 'react';
 import { motion } from 'motion/react';
 import { UtensilsCrossed, Coffee, Sun, Moon } from 'lucide-react';
 import { usePersistedState } from '../hooks/usePersistedState';
+import { useAutoResize } from '../hooks/useAutoResize';
 
 interface Meal {
     name: string;
@@ -8,6 +10,28 @@ interface Meal {
     icon: typeof Coffee;
     gradient: string;
     glowColor: string;
+}
+
+interface MealInputProps {
+    name: string;
+    content: string;
+    onChange: (val: string) => void;
+}
+
+function MealInput({ name, content, onChange }: MealInputProps) {
+    const ref = useRef<HTMLTextAreaElement | null>(null);
+    useAutoResize(ref, content);
+
+    return (
+        <textarea
+            ref={ref}
+            rows={1}
+            value={content}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={`What's for ${name}?`}
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white/80 placeholder-white/20 outline-none focus:ring-2 focus:ring-white/10 transition-all capitalize resize-none overflow-hidden"
+        />
+    );
 }
 
 export default function MealTracker() {
@@ -48,12 +72,10 @@ export default function MealTracker() {
                             >
                                 <meal.icon size={16} className="text-white" />
                             </div>
-                            <input
-                                type="text"
-                                value={meal.content}
-                                onChange={(e) => setMeals(prev => ({ ...prev, [meal.name]: e.target.value }))}
-                                placeholder={`What's for ${meal.name}?`}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white/80 placeholder-white/20 outline-none focus:ring-2 focus:ring-white/10 transition-all capitalize"
+                            <MealInput
+                                name={meal.name}
+                                content={meal.content}
+                                onChange={(val) => setMeals(prev => ({ ...prev, [meal.name]: val }))}
                             />
                         </div>
                     ))}
