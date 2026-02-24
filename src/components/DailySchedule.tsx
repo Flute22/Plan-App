@@ -170,7 +170,7 @@ export default function DailySchedule() {
                     )}
                 </AnimatePresence>
 
-                <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar max-h-[500px]">
+                <div className="flex-1 overflow-y-auto overscroll-contain pr-1 custom-scrollbar max-h-[500px]">
                     <div className="space-y-1">
                         {visibleSchedule.map((item) => {
                             const isCurrent = item.id === activeId;
@@ -178,8 +178,8 @@ export default function DailySchedule() {
                                 <div
                                     key={item.id}
                                     className={`group flex items-start gap-4 p-3 rounded-2xl transition-all border ${isCurrent
-                                            ? 'bg-sky-500/10 border-sky-500/20 shadow-lg shadow-sky-500/5'
-                                            : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10'
+                                        ? 'bg-sky-500/10 border-sky-500/20 shadow-lg shadow-sky-500/5'
+                                        : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10'
                                         }`}
                                 >
                                     <div className="flex flex-col items-center pt-1 w-14 flex-shrink-0">
