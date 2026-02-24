@@ -53,6 +53,20 @@ export default function DailySchedule() {
     const [startHour, setStartHour] = usePersistedState<number>('schedule-start', 4); // 4 AM
     const [endHour, setEndHour] = usePersistedState<number>('schedule-end', 22); // 10 PM
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const el = scrollContainerRef.current;
+        if (!el) return;
+
+        const handleWheel = (e: WheelEvent) => {
+            // Keep the scroll inside the container
+            e.stopPropagation();
+        };
+
+        el.addEventListener('wheel', handleWheel, { passive: false });
+        return () => el.removeEventListener('wheel', handleWheel);
+    }, []);
 
     // Local state for settings to avoid immediate persistence during editing
     const [tempStart, setTempStart] = useState(startHour);
@@ -170,7 +184,10 @@ export default function DailySchedule() {
                     )}
                 </AnimatePresence>
 
-                <div className="flex-1 overflow-y-auto overscroll-contain pr-1 custom-scrollbar max-h-[500px]">
+                <div
+                    ref={scrollContainerRef}
+                    className="flex-1 overflow-y-auto overscroll-contain pr-1 custom-scrollbar max-h-[500px]"
+                >
                     <div className="space-y-1">
                         {visibleSchedule.map((item) => {
                             const isCurrent = item.id === activeId;
