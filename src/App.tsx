@@ -12,6 +12,7 @@ import SleepTracker from './components/SleepTracker';
 import GratitudeJournal from './components/GratitudeJournal';
 import MealTracker from './components/MealTracker';
 import ActivityChart from './components/ActivityChart';
+import Logo from './components/Logo';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -54,11 +55,8 @@ export default function App() {
           className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 overflow-hidden"
         >
           <div>
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 mb-2">
-              <div className="p-2.5 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-white/5">
-                <Sparkles size={22} className="text-amber-400" />
-              </div>
-              <span className="text-xs font-bold uppercase tracking-[0.25em] text-white/20 font-heading">flow-Day</span>
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="mb-2">
+              <Logo variant="horizontal" size={40} />
             </motion.div>
             <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
               className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold tracking-tight leading-tight">
